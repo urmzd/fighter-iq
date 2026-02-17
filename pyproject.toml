@@ -1,7 +1,7 @@
 [project]
-name = "mma-ai-coach"
+name = "fight-analyzer"
 version = "0.1.0"
-description = "MMA AI Coach — Video analysis pipeline for martial arts"
+description = "Fight Analyzer — Video analysis pipeline for martial arts"
 readme = "README.md"
 authors = [
     { name = "Urmzd Mukhammadnaim", email = "hello@urmzd.com" }
@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mma-coach = "mma_ai_coach.cli:app"
+fight-analyzer = "fight_analyzer.cli:app"
 
 [tool.uv]
 prerelease = "allow"

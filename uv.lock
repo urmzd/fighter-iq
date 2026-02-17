@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -814,6 +814,41 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/01/72/0df5c58c954742f31a7054e2dd1143bae0b408b7f36b59b85f928f9b456c/fastapi-0.128.8.tar.gz", hash = "sha256:3171f9f328c4a218f0a8d2ba8310ac3a55d1ee12c28c949650288aee25966007", size = 375523, upload-time = "2026-02-11T15:19:36.69Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/37/37b07e276f8923c69a5df266bfcb5bac4ba8b55dfe4a126720f8c48681d1/fastapi-0.128.8-py3-none-any.whl", hash = "sha256:5618f492d0fe973a778f8fec97723f598aa9deee495040a8d51aaf3cf123ecf1", size = 103630, upload-time = "2026-02-11T15:19:35.209Z" },
+]
+
+[[package]]
+name = "fight-analyzer"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "mlx-audio", extra = ["tts"] },
+    { name = "mlx-lm" },
+    { name = "mlx-vlm" },
+    { name = "nicegui" },
+    { name = "numpy" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+    { name = "pip" },
+    { name = "rich" },
+    { name = "soundfile" },
+    { name = "typer" },
+    { name = "ultralytics" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mlx-audio", extras = ["tts"], specifier = ">=0.3.0" },
+    { name = "mlx-lm", specifier = ">=0.1.0" },
+    { name = "mlx-vlm", specifier = ">=0.1.0" },
+    { name = "nicegui", specifier = ">=2.0.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "opencv-python", specifier = ">=4.8.0" },
+    { name = "pillow", specifier = ">=10.0.0" },
+    { name = "pip", specifier = ">=23.0" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "soundfile", specifier = ">=0.12.0" },
+    { name = "typer", specifier = ">=0.9.0" },
+    { name = "ultralytics", specifier = ">=8.0.0" },
 ]
 
 [[package]]
@@ -1680,41 +1715,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/23/60/835c02b0c6f3ae3bccfd21a0df9722887f6d0d223a24ad5ba30356ded5c7/mlx_vlm-0.3.11.tar.gz", hash = "sha256:5e70288fecd9d72339da158035150d530013e8df0d2bac2b024b55bb64236a86", size = 470871, upload-time = "2026-02-04T20:11:42.97Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/5a/13da21def440061781d7f594b327e02445624298a22ff9be69daf7a4d69e/mlx_vlm-0.3.11-py3-none-any.whl", hash = "sha256:5304b079c8307385b395f5c1c38fbec405cedb2d250aeeb41abff43673de47be", size = 588185, upload-time = "2026-02-04T20:11:40.993Z" },
-]
-
-[[package]]
-name = "mma-ai-coach"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "mlx-audio", extra = ["tts"] },
-    { name = "mlx-lm" },
-    { name = "mlx-vlm" },
-    { name = "nicegui" },
-    { name = "numpy" },
-    { name = "opencv-python" },
-    { name = "pillow" },
-    { name = "pip" },
-    { name = "rich" },
-    { name = "soundfile" },
-    { name = "typer" },
-    { name = "ultralytics" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mlx-audio", extras = ["tts"], specifier = ">=0.3.0" },
-    { name = "mlx-lm", specifier = ">=0.1.0" },
-    { name = "mlx-vlm", specifier = ">=0.1.0" },
-    { name = "nicegui", specifier = ">=2.0.0" },
-    { name = "numpy", specifier = ">=1.24.0" },
-    { name = "opencv-python", specifier = ">=4.8.0" },
-    { name = "pillow", specifier = ">=10.0.0" },
-    { name = "pip", specifier = ">=23.0" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "soundfile", specifier = ">=0.12.0" },
-    { name = "typer", specifier = ">=0.9.0" },
-    { name = "ultralytics", specifier = ">=8.0.0" },
 ]
 
 [[package]]
