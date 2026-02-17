@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.h5
+*.pb
+*.safetensors
+
+# Videos & large media
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.webm
+
+# Images (uncomment if needed)
+# *.jpg
+# *.jpeg
+# *.png
+
+# Outputs
+outputs/*.json
+outputs/*.mp4
+outputs/*.avi
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

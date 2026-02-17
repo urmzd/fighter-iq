@@ -1,0 +1,33 @@
+[project]
+name = "mma-ai-coach"
+version = "0.1.0"
+description = "MMA AI Coach — Video analysis pipeline for martial arts"
+readme = "README.md"
+authors = [
+    { name = "Urmzd Mukhammadnaim", email = "hello@urmzd.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+    "opencv-python>=4.8.0",
+    "ultralytics>=8.0.0",
+    "mlx-vlm>=0.1.0",
+    "mlx-lm>=0.1.0",
+    "numpy>=1.24.0",
+    "rich>=13.0.0",
+    "pillow>=10.0.0",
+    "nicegui>=2.0.0",
+    "mlx-audio[tts]>=0.3.0",
+    "soundfile>=0.12.0",
+    "pip>=23.0",
+]
+
+[project.scripts]
+mma-coach = "mma_ai_coach.cli:app"
+
+[tool.uv]
+prerelease = "allow"
+
+[build-system]
+requires = ["uv_build>=0.10.0,<0.11.0"]
+build-backend = "uv_build"
