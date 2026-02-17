@@ -1,4 +1,4 @@
-# Architecture — MMA AI Coach
+# Architecture — Fight Analyzer
 
 ## 1. System Overview
 
@@ -220,13 +220,13 @@ Dropping from 3 to 2 detected persons triggers the `<= 2` guards in both `filter
 
 Remove the `len(candidates) <= 2` gate in `filter_referee()`. Instead, score **all** non-spectator, non-matched persons against the referee heuristic even when there are only 2. Apply a minimum score threshold (like the 0.4 already used in `filter_referee_with_profiles()` at detector.py:406) so the system won't mark a real fighter as referee when the score is low.
 
-**File:** `src/mma_ai_coach/detector.py` — `filter_referee()` (line 113) and `detect_fighters()` (line 412)
+**File:** `src/fight_analyzer/detector.py` — `filter_referee()` (line 113) and `detect_fighters()` (line 412)
 
 ### Fix 2 (Critical): Lower YOLO Confidence Threshold
 
 Drop from 0.80 → 0.50. YOLOv8 is already filtering to class 0 (person-only); 0.50 retains occluded and unusual-pose detections while still rejecting pure noise. This keeps 3 people visible more consistently, preventing the cascade failure where `<= 2` guards skip both filter stages.
 
-**File:** `src/mma_ai_coach/detector.py` — `detect_persons()` (line 42)
+**File:** `src/fight_analyzer/detector.py` — `detect_persons()` (line 42)
 
 ### Fix 3 (High Value): Pose-Based Referee Detection
 
@@ -237,7 +237,7 @@ Use the 17 COCO keypoints already extracted to distinguish referee from fighters
 
 Compute a `pose_referee_score` from keypoints alongside the existing bbox-geometry heuristics. This is more robust than aspect ratio alone because it uses actual body pose rather than bounding box shape.
 
-**File:** `src/mma_ai_coach/detector.py` — new helper `_compute_pose_referee_score(keypoints)`, integrated into both `filter_referee()` and `filter_referee_with_profiles()`
+**File:** `src/fight_analyzer/detector.py` — new helper `_compute_pose_referee_score(keypoints)`, integrated into both `filter_referee()` and `filter_referee_with_profiles()`
 
 ### Fix 4 (High Value): Keypoint-Based Identity Matching
 
@@ -247,7 +247,7 @@ Add keypoint spatial features to `match_profiles()`:
 
 Suggested weight distribution: 60% color histogram, 20% keypoint-spatial proximity, 20% body proportion similarity.
 
-**File:** `src/mma_ai_coach/detector.py` — `match_profiles()` (line 280)
+**File:** `src/fight_analyzer/detector.py` — `match_profiles()` (line 280)
 
 ### Fix 5 (Medium): Temporal Consistency via Kalman Filter
 
@@ -257,4 +257,4 @@ Replace the raw bbox center matching in `match_profiles()` with a Kalman filter 
 
 During grappling, the lower-50% bbox crop in `extract_color_histogram()` (detector.py:199) often contains both fighters' bodies. Use the keypoint hip positions (indices 11, 12 in the COCO-17 layout) to create a tighter polygonal mask around just the target fighter's shorts/legs region, excluding the opponent's body from the histogram computation.
 
-**File:** `src/mma_ai_coach/detector.py` — `extract_color_histogram()` (line 199)
+**File:** `src/fight_analyzer/detector.py` — `extract_color_histogram()` (line 199)
