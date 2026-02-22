@@ -50,3 +50,6 @@ outputs/*.avi
 # OS
 .DS_Store
 Thumbs.db
+.claude/
+.env
+.env.*
