@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from rich.console import Console
+
+from fight_analyzer import ui
 
 app = typer.Typer(
     name="fight-analyzer",
@@ -12,7 +13,6 @@ app = typer.Typer(
     no_args_is_help=True,
     invoke_without_command=True,
 )
-console = Console()
 
 
 @app.callback()
@@ -60,22 +60,23 @@ def analyze(
 
     video_path = Path(source)
     if not video_path.exists():
-        console.print(f"[red]Error:[/] File not found: {video_path}")
+        ui.error(f"File not found: {video_path}")
         raise typer.Exit(code=1)
 
     from fight_analyzer.pipeline import MIN_ANALYSIS_DURATION
 
     if duration is not None and duration < MIN_ANALYSIS_DURATION:
-        console.print(
-            f"[yellow]Warning:[/] Minimum analysis duration is {MIN_ANALYSIS_DURATION}s "
+        ui.warn(
+            f"Minimum analysis duration is {MIN_ANALYSIS_DURATION}s "
             f"(requested {duration}s). Clamping to {MIN_ANALYSIS_DURATION}s."
         )
         duration = float(MIN_ANALYSIS_DURATION)
 
-    console.print(f"[bold]Fight Analyzer[/] — Analyzing: [cyan]{video_path}[/]")
-    console.print(f"  Interval: {interval}s | Batch size: {batch_size}")
+    ui.header("fight-analyzer analyze")
+    ui.info(f"Video: {video_path}")
+    ui.info(f"Interval: {interval}s | Batch size: {batch_size}")
     if duration:
-        console.print(f"  Max duration: {duration}s")
+        ui.info(f"Max duration: {duration}s")
 
     from fight_analyzer.pipeline import run_pipeline
 
@@ -120,63 +121,68 @@ def review(
     from fight_analyzer.personas import get_persona, list_persona_ids
 
     if not analysis.exists():
-        console.print(f"[red]Error:[/] Analysis file not found: {analysis}")
+        ui.error(f"Analysis file not found: {analysis}")
         raise typer.Exit(code=1)
     if not video.exists():
-        console.print(f"[red]Error:[/] Video file not found: {video}")
+        ui.error(f"Video file not found: {video}")
         raise typer.Exit(code=1)
 
     available = list_persona_ids()
     if persona not in available:
-        console.print(f"[red]Error:[/] Unknown persona '{persona}'. Available: {', '.join(available)}")
+        ui.error(f"Unknown persona '{persona}'. Available: {', '.join(available)}")
         raise typer.Exit(code=1)
 
     selected_persona = get_persona(persona)
-    console.print(f"[bold]Fight Analyzer[/] — Fight Review")
-    console.print(f"  Analysis: [cyan]{analysis}[/]")
-    console.print(f"  Video: [cyan]{video}[/]")
-    console.print(f"  Persona: [cyan]{selected_persona.name}[/]")
+    ui.header("fight-analyzer review")
+    ui.info(f"Analysis: {analysis}")
+    ui.info(f"Video: {video}")
+    ui.info(f"Persona: {selected_persona.name}")
 
     # 1. Load analysis
-    console.print("\n[bold blue]Step 1/4:[/] Loading analysis...")
+    ui.info("Step 1/4: Loading analysis...")
     from fight_analyzer.pipeline import load_analysis
     result = load_analysis(analysis)
-    console.print(f"  Loaded {len(result.frames)} frames, {len(result.segments)} segments.")
+    ui.phase_ok("Analysis loaded", f"{len(result.frames)} frames, {len(result.segments)} segments")
 
     # 2. Render annotated video
-    console.print("\n[bold blue]Step 2/4:[/] Rendering annotated video...")
+    ui.info("Step 2/4: Rendering annotated video...")
     from fight_analyzer.renderer import render_annotated_video
     output_dir = Path("outputs") / "review"
     output_dir.mkdir(parents=True, exist_ok=True)
     annotated_video_path = output_dir / f"{video.stem}_annotated.mp4"
-    render_annotated_video(video, result, annotated_video_path)
-    console.print(f"  Saved: [green]{annotated_video_path}[/]")
+    with ui.spinner("Rendering annotated video..."):
+        render_annotated_video(video, result, annotated_video_path)
+    ui.phase_ok("Annotated video saved", str(annotated_video_path))
 
     # 3. Generate commentary text
-    console.print("\n[bold blue]Step 3/4:[/] Generating commentary text...")
+    ui.info("Step 3/4: Generating commentary text...")
     from fight_analyzer.summarizer import load_text_model
     from fight_analyzer.commentary import generate_commentary
-    text_model, text_tokenizer = load_text_model()
-    commentary_segments = generate_commentary(text_model, text_tokenizer, result, selected_persona)
+    with ui.spinner("Loading text model..."):
+        text_model, text_tokenizer = load_text_model()
+    with ui.spinner("Generating commentary..."):
+        commentary_segments = generate_commentary(text_model, text_tokenizer, result, selected_persona)
     del text_model, text_tokenizer
     gc.collect()
-    console.print(f"  Generated {len(commentary_segments)} commentary segments.")
+    ui.phase_ok("Commentary generated", f"{len(commentary_segments)} segments")
 
     # 4. Synthesize TTS audio
-    console.print("\n[bold blue]Step 4/4:[/] Synthesizing TTS audio...")
+    ui.info("Step 4/4: Synthesizing TTS audio...")
     from fight_analyzer.tts import load_tts_model, synthesize_continuous
-    tts_model = load_tts_model()
+    with ui.spinner("Loading TTS model..."):
+        tts_model = load_tts_model()
 
     # Calculate total duration from last frame timestamp + interval
     total_duration = result.frames[-1].timestamp + result.settings.get("interval", 1.0) if result.frames else 0
     commentary_audio_path = output_dir / "commentary.wav"
-    synthesize_continuous(tts_model, commentary_segments, selected_persona, total_duration, commentary_audio_path)
+    with ui.spinner("Synthesizing audio..."):
+        synthesize_continuous(tts_model, commentary_segments, selected_persona, total_duration, commentary_audio_path)
     del tts_model
     gc.collect()
-    console.print(f"  Saved: [green]{commentary_audio_path}[/]")
+    ui.phase_ok("TTS audio saved", str(commentary_audio_path))
 
     # 5. Launch review UI
-    console.print(f"\n[bold green]Launching review UI on port {port}...[/]")
+    ui.phase_ok(f"Launching review UI on port {port}")
     from fight_analyzer.review_ui import launch_review
     launch_review(
         video_path=annotated_video_path,

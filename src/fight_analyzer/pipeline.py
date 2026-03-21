@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 
 import cv2
-from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 
@@ -21,11 +20,10 @@ from fight_analyzer import (
     PersonRole,
     SegmentSummary,
 )
+from fight_analyzer import ui
 from fight_analyzer.event_stream import EventStream
 from fight_analyzer.shutdown import install_signal_handlers, is_shutdown_requested
 from fight_analyzer.visualizer import draw_annotations, show_frame
-
-console = Console()
 
 _WINDOW_NAME = "Fight Analyzer"
 MIN_ANALYSIS_DURATION = 120  # seconds — one standard MMA round
@@ -42,8 +40,8 @@ def run_pipeline(
     """Run the full analysis pipeline with streaming per-frame output."""
 
     if max_duration is not None and max_duration < MIN_ANALYSIS_DURATION:
-        console.print(
-            f"[yellow]Warning:[/] Minimum analysis duration is {MIN_ANALYSIS_DURATION}s "
+        ui.warn(
+            f"Minimum analysis duration is {MIN_ANALYSIS_DURATION}s "
             f"(requested {max_duration}s). Clamping to {MIN_ANALYSIS_DURATION}s."
         )
         max_duration = float(MIN_ANALYSIS_DURATION)
@@ -61,7 +59,7 @@ def run_pipeline(
 
     # ── Phase 1: Per-frame analysis (YOLO + VLM loaded simultaneously) ───
 
-    console.print("\n[bold blue]Phase 1:[/] Loading models (YOLO + VLM)...")
+    ui.info("Phase 1: Loading models (YOLO + VLM)...")
     from fight_analyzer.detector import (
         load_detector,
         detect_persons,
@@ -84,7 +82,7 @@ def run_pipeline(
 
     yolo = load_detector()
     vlm_model, vlm_processor, vlm_config = load_vision_model()
-    console.print("  Models loaded.\n")
+    ui.phase_ok("Models loaded")
 
     prev_detections: list[FighterDetection] | None = None
     frame_count = 0
@@ -98,7 +96,7 @@ def run_pipeline(
     user_quit = False
 
     try:
-        with Live(stream.get_renderable(), console=console, refresh_per_second=4) as live:
+        with Live(stream.get_renderable(), console=ui.console, refresh_per_second=4) as live:
             for timestamp, image in extract_frames(video_path, interval, max_duration):
                 if is_shutdown_requested():
                     shutdown = True
@@ -311,27 +309,25 @@ def run_pipeline(
         gc.collect()
 
     if shutdown:
-        console.print(f"\n[yellow]Shutdown requested — saving partial results ({frame_count} frames).[/]")
+        ui.warn(f"Shutdown requested — saving partial results ({frame_count} frames).")
     elif user_quit:
-        console.print(f"\n[yellow]Analysis stopped by user after {frame_count} frames.[/]")
+        ui.warn(f"Analysis stopped by user after {frame_count} frames.")
 
     if not result.frames:
-        console.print("[red]No frames extracted. Check video file.[/]")
+        ui.error("No frames extracted. Check video file.")
         _save_results(result, video_path, output_path)
         return result
 
-    console.print(
-        f"[bold green]Phase 1 complete:[/] {frame_count} frames analyzed.\n"
-    )
+    ui.phase_ok("Phase 1 complete", f"{frame_count} frames analyzed")
 
     # ── Phase 2: Segment stitching + final summary (text model) ──────────
 
     if not shutdown and not is_shutdown_requested():
-        console.print("[bold blue]Phase 2:[/] Loading text model (Qwen2.5-1.5B)...")
+        ui.info("Phase 2: Loading text model (Qwen2.5-1.5B)...")
         from fight_analyzer.summarizer import load_text_model, stitch_segment, final_summary
 
         text_model, text_tokenizer = load_text_model()
-        console.print("  Model loaded.\n")
+        ui.phase_ok("Text model loaded")
 
         try:
             for i in range(0, len(result.frames), batch_size):
@@ -342,18 +338,18 @@ def run_pipeline(
                 result.segments.append(segment)
 
                 time_range = f"{segment.timestamps[0]:.1f}s – {segment.timestamps[-1]:.1f}s"
-                console.print(
+                ui.console.print(
                     Panel(
                         segment.narrative,
                         title=f"Segment {len(result.segments)} ({time_range})",
-                        border_style="blue",
+                        border_style="cyan",
                     )
                 )
 
             if not is_shutdown_requested():
-                console.print()
+                ui.console.print()
                 result.summary = final_summary(text_model, text_tokenizer, result.segments)
-                console.print(
+                ui.console.print(
                     Panel(result.summary, title="Final Summary", border_style="green")
                 )
         finally:
@@ -377,11 +373,11 @@ def _save_results(
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     auto_path = outputs_dir / f"{video_path.stem}_analysis_{ts}.json"
     auto_path.write_text(json.dumps(output_data, indent=2))
-    console.print(f"\n[bold green]Analysis saved to:[/] {auto_path}")
+    ui.phase_ok("Analysis saved", str(auto_path))
 
     if output_path:
         output_path.write_text(json.dumps(output_data, indent=2))
-        console.print(f"[bold green]Also saved to:[/] {output_path}")
+        ui.phase_ok("Also saved", str(output_path))
 
 
 def load_analysis(path: Path) -> AnalysisResult:
