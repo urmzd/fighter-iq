@@ -4,7 +4,7 @@
 
 ```bash
 # Clone and install
-git clone <repo-url> && cd fight-analyzer
+git clone <repo-url> && cd fighter-iq
 uv sync
 ```
 
@@ -12,12 +12,12 @@ All ML model weights are downloaded automatically on first run.
 
 ## CLI Reference
 
-### `fight-analyzer analyze`
+### `fighter-iq analyze`
 
 Run the full detection + VLM + spatial + summarization pipeline on a video.
 
 ```
-fight-analyzer analyze <SOURCE> [OPTIONS]
+fighter-iq analyze <SOURCE> [OPTIONS]
 ```
 
 | Flag | Short | Default | Description |
@@ -28,12 +28,12 @@ fight-analyzer analyze <SOURCE> [OPTIONS]
 | `--duration` | `-d` | full video | Only analyze the first N seconds (minimum 120s) |
 | `--visualize / --no-visualize` | | `--visualize` | Show live OpenCV window with annotated frames |
 
-### `fight-analyzer review`
+### `fighter-iq review`
 
 Load an analysis JSON, render annotated video, generate commentary, synthesize TTS, and launch the web review UI.
 
 ```
-fight-analyzer review [OPTIONS]
+fighter-iq review [OPTIONS]
 ```
 
 | Flag | Short | Default | Description |
@@ -48,20 +48,20 @@ fight-analyzer review [OPTIONS]
 ### Quick sanity test
 
 ```bash
-fight-analyzer analyze inputs/clip.mp4 --duration 10 --no-visualize --output outputs/test.json
-fight-analyzer review --analysis outputs/test.json --video inputs/clip.mp4
+fighter-iq analyze inputs/clip.mp4 --duration 10 --no-visualize --output outputs/test.json
+fighter-iq review --analysis outputs/test.json --video inputs/clip.mp4
 ```
 
 ### Full analysis with live visualization
 
 ```bash
-fight-analyzer analyze inputs/full_fight.mp4 --interval 0.5 --output outputs/full.json
+fighter-iq analyze inputs/full_fight.mp4 --interval 0.5 --output outputs/full.json
 ```
 
 ### Review with hype commentator
 
 ```bash
-fight-analyzer review \
+fighter-iq review \
   --analysis outputs/full.json \
   --video inputs/full_fight.mp4 \
   --persona hype \
@@ -72,7 +72,7 @@ fight-analyzer review \
 
 | File | Description |
 |------|-------------|
-| `outputs/<video>_analysis_<timestamp>.json` | Full analysis with per-frame data, segments, and summary |
+| `outputs/<video>_analysis_<timestamp>.json` | Full analysis with per-frame data, segments, tactics, strategies, and summary |
 | `outputs/review/<video>_annotated.mp4` | Rendered video with skeleton overlays, control bars, and impact borders |
 | `outputs/review/commentary.wav` | Timeline-aligned TTS audio matching video duration |
 

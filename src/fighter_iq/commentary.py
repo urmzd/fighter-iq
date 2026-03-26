@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from mlx_lm import generate
 from mlx_lm.sample_utils import make_sampler
 
-from fight_analyzer import AnalysisResult, SegmentSummary
-from fight_analyzer.personas import CommentaryPersona
-from fight_analyzer.summarizer import _format_frame_for_prompt
+from fighter_iq import AnalysisResult, SegmentSummary
+from fighter_iq.personas import CommentaryPersona
+from fighter_iq.summarizer import _format_frame_for_prompt
 
 
 @dataclass

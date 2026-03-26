@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from fight_analyzer import FighterDetection
+from fighter_iq import FighterDetection
 
 # Fighter colors (BGR for OpenCV)
 _COLOR_A = (0, 255, 0)   # green

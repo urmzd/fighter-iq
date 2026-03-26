@@ -41,7 +41,7 @@ class EventStream:
             table.add_row(ts, Text(etype, style=style), Text(details, style=style))
 
         header = Panel(
-            Text("Fight Analyzer — Live Analysis", style="bold white"),
+            Text("Fighter IQ — Live Analysis", style="bold white"),
             border_style="blue",
             expand=True,
         )

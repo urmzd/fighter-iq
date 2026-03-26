@@ -1,23 +1,62 @@
-# Fight Analyzer
+# Fighter IQ
 
-AI-powered video analysis pipeline for martial arts and combat sports.
+AI-powered strategy analysis for combat sports video.
 
-## Features
+Fighter IQ watches fight footage and identifies **tactics** (individual actions like jabs, level changes, angle cuts) and **strategies** (game plans like pressure fighting, counter-striking, grapple-dominant play).
 
-- **Frame extraction** — configurable-interval sampling from any video file
-- **Pose detection** — YOLOv8-nano-pose for 17-keypoint skeleton tracking
-- **Fighter recognition** — color-histogram identity tracking with referee/spectator filtering
-- **AI frame analysis** — Qwen2.5-VL-7B vision-language descriptions per frame
-- **Spatial metrics** — control scoring, proximity, movement vectors, impact detection
-- **Segment stitching** — Qwen2.5-1.5B narrative summaries across frame batches
-- **Commentary generation** — persona-styled spoken text (technical analyst or hype commentator)
-- **TTS synthesis** — Kokoro-82M text-to-speech with timeline-aligned audio
-- **Web review UI** — NiceGUI player with synced annotated video, audio, and commentary
+## Architecture
+
+Four service boundaries, each defined by a Protocol interface:
+
+```
+Video File
+  │
+  ▼
+┌─────────────────────┐
+│     Ingestor         │  Frame extraction at configurable intervals
+│  (services/ingestor) │  Yields (timestamp, PIL.Image) tuples
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  Embedding Model     │  CLIP ViT-B/32 image embeddings (512-dim)
+│  (services/embedder) │  Frame similarity, clustering, semantic search
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│       Agent          │  YOLOv8 pose detection + Qwen2.5-VL-7B descriptions
+│  (services/agent)    │  Spatial metrics: control, proximity, impact
+│                      │  Segment stitching via Qwen2.5-1.5B
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  Strategy Service    │  Tactic identification from descriptions + embeddings
+│ (services/strategy)  │  Strategy classification (pressure, counter, grapple...)
+└─────────────────────┘
+```
+
+## Domain Model
+
+**Tactic** — an atomic fighting action spanning one or more frames:
+- *Strike*: jab, cross, hook, uppercut, roundhouse, elbow, knee
+- *Grapple*: takedown, clinch entry, mount, guard pass, back take
+- *Movement*: angle cut, circling, advancing, retreating
+- *Defense*: slip, block, parry, sprawl
+- *Transition*: guard to mount, clinch to takedown
+
+**Strategy** — a sequence of tactics forming a coherent game plan:
+- *Pressure*: constant forward movement + high volume striking
+- *Counter*: reactive positioning + exploiting openings
+- *Grapple-dominant*: takedown-centric + top control
+- *Clinch work*: inside fighting + dirty boxing
+- *Point fighting*: in-and-out movement + selective engagement
 
 ## Requirements
 
 - Python 3.11+
-- Apple Silicon recommended (MLX acceleration for VLM, LLM, and TTS models)
+- Apple Silicon recommended (MLX acceleration for VLM, LLM, and TTS)
 - ~16 GB RAM for concurrent model loading
 
 ## Installation
@@ -31,20 +70,21 @@ uv sync
 Analyze a video:
 
 ```bash
-fight-analyzer analyze path/to/fight.mp4
+fighter-iq analyze path/to/fight.mp4
 ```
 
-Review the results with commentary:
+Review results with commentary:
 
 ```bash
-fight-analyzer review --analysis outputs/fight_analysis_*.json --video path/to/fight.mp4
+fighter-iq review --analysis outputs/fight_analysis_*.json --video path/to/fight.mp4
 ```
 
 See [USAGE.md](USAGE.md) for the full CLI reference and example workflows.
 
-## Architecture
+## Documentation
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the module map, detection pipeline details, and ML diagnosis notes.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — module map, detection pipeline, ML diagnosis
+- [USAGE.md](USAGE.md) — CLI reference and examples
 
 ## License
 

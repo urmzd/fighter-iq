@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from fight_analyzer import BBox, FighterDetection
+from fighter_iq import BBox, FighterDetection
 
 # Keywords that indicate impact in VLM descriptions
 _STRIKE_KEYWORDS = [

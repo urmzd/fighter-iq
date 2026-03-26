@@ -8,8 +8,8 @@ import cv2
 from PIL import Image
 from rich.progress import Progress
 
-from fight_analyzer import AnalysisResult, BBox, FighterDetection, FrameAnalysis, Keypoint
-from fight_analyzer.visualizer import draw_annotations
+from fighter_iq import AnalysisResult, BBox, FighterDetection, FrameAnalysis, Keypoint
+from fighter_iq.visualizer import draw_annotations
 
 
 def _find_surrounding_frames(analysis: AnalysisResult, timestamp: float) -> tuple[int | None, int | None]:

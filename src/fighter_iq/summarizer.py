@@ -2,7 +2,7 @@
 
 from mlx_lm import load, generate
 
-from fight_analyzer import FrameAnalysis, SegmentSummary
+from fighter_iq import FrameAnalysis, SegmentSummary
 
 _TEXT_MODEL_ID = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 

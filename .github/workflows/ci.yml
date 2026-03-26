@@ -30,4 +30,4 @@ jobs:
         run: uv sync
 
       - name: Check installation
-        run: uv run python -c "import fight_analyzer; print('Installation successful')"
+        run: uv run python -c "import fighter_iq; print('Installation successful')"

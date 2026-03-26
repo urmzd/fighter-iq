@@ -1,15 +1,15 @@
-"""CLI entry point for Fight Analyzer."""
+"""CLI entry point for Fighter IQ."""
 
 from pathlib import Path
 from typing import Optional
 
 import typer
 
-from fight_analyzer import ui
+from fighter_iq import ui
 
 app = typer.Typer(
-    name="fight-analyzer",
-    help="Fight Analyzer — Analyze martial arts videos with AI.",
+    name="fighter-iq",
+    help="Fighter IQ — Analyze martial arts videos with AI.",
     no_args_is_help=True,
     invoke_without_command=True,
 )
@@ -17,7 +17,7 @@ app = typer.Typer(
 
 @app.callback()
 def main() -> None:
-    """Fight Analyzer — Analyze martial arts videos with AI."""
+    """Fighter IQ — Analyze martial arts videos with AI."""
 
 
 @app.command()
@@ -63,7 +63,7 @@ def analyze(
         ui.error(f"File not found: {video_path}")
         raise typer.Exit(code=1)
 
-    from fight_analyzer.pipeline import MIN_ANALYSIS_DURATION
+    from fighter_iq.pipeline import MIN_ANALYSIS_DURATION
 
     if duration is not None and duration < MIN_ANALYSIS_DURATION:
         ui.warn(
@@ -72,13 +72,13 @@ def analyze(
         )
         duration = float(MIN_ANALYSIS_DURATION)
 
-    ui.header("fight-analyzer analyze")
+    ui.header("fighter-iq analyze")
     ui.info(f"Video: {video_path}")
     ui.info(f"Interval: {interval}s | Batch size: {batch_size}")
     if duration:
         ui.info(f"Max duration: {duration}s")
 
-    from fight_analyzer.pipeline import run_pipeline
+    from fighter_iq.pipeline import run_pipeline
 
     run_pipeline(
         video_path=video_path,
@@ -118,7 +118,7 @@ def review(
 ) -> None:
     """Review a fight analysis with annotated video and TTS commentary."""
     import gc
-    from fight_analyzer.personas import get_persona, list_persona_ids
+    from fighter_iq.personas import get_persona, list_persona_ids
 
     if not analysis.exists():
         ui.error(f"Analysis file not found: {analysis}")
@@ -133,20 +133,20 @@ def review(
         raise typer.Exit(code=1)
 
     selected_persona = get_persona(persona)
-    ui.header("fight-analyzer review")
+    ui.header("fighter-iq review")
     ui.info(f"Analysis: {analysis}")
     ui.info(f"Video: {video}")
     ui.info(f"Persona: {selected_persona.name}")
 
     # 1. Load analysis
     ui.info("Step 1/4: Loading analysis...")
-    from fight_analyzer.pipeline import load_analysis
+    from fighter_iq.pipeline import load_analysis
     result = load_analysis(analysis)
     ui.phase_ok("Analysis loaded", f"{len(result.frames)} frames, {len(result.segments)} segments")
 
     # 2. Render annotated video
     ui.info("Step 2/4: Rendering annotated video...")
-    from fight_analyzer.renderer import render_annotated_video
+    from fighter_iq.renderer import render_annotated_video
     output_dir = Path("outputs") / "review"
     output_dir.mkdir(parents=True, exist_ok=True)
     annotated_video_path = output_dir / f"{video.stem}_annotated.mp4"
@@ -156,8 +156,8 @@ def review(
 
     # 3. Generate commentary text
     ui.info("Step 3/4: Generating commentary text...")
-    from fight_analyzer.summarizer import load_text_model
-    from fight_analyzer.commentary import generate_commentary
+    from fighter_iq.summarizer import load_text_model
+    from fighter_iq.commentary import generate_commentary
     with ui.spinner("Loading text model..."):
         text_model, text_tokenizer = load_text_model()
     with ui.spinner("Generating commentary..."):
@@ -168,7 +168,7 @@ def review(
 
     # 4. Synthesize TTS audio
     ui.info("Step 4/4: Synthesizing TTS audio...")
-    from fight_analyzer.tts import load_tts_model, synthesize_continuous
+    from fighter_iq.tts import load_tts_model, synthesize_continuous
     with ui.spinner("Loading TTS model..."):
         tts_model = load_tts_model()
 
@@ -183,7 +183,7 @@ def review(
 
     # 5. Launch review UI
     ui.phase_ok(f"Launching review UI on port {port}")
-    from fight_analyzer.review_ui import launch_review
+    from fighter_iq.review_ui import launch_review
     launch_review(
         video_path=annotated_video_path,
         audio_path=commentary_audio_path,

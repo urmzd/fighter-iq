@@ -6,9 +6,9 @@ from pathlib import Path
 
 from nicegui import app, ui
 
-from fight_analyzer import AnalysisResult
-from fight_analyzer.commentary import CommentarySegment
-from fight_analyzer.personas import CommentaryPersona
+from fighter_iq import AnalysisResult
+from fighter_iq.commentary import CommentarySegment
+from fighter_iq.personas import CommentaryPersona
 
 
 def launch_review(
@@ -36,7 +36,7 @@ def launch_review(
             video_url, audio_url, analysis, commentary_segments, persona
         )
 
-    ui.run(port=port, title="Fight Analyzer — Fight Review", reload=False)
+    ui.run(port=port, title="Fighter IQ — Fight Review", reload=False)
 
 
 def _build_review_page(
@@ -51,7 +51,7 @@ def _build_review_page(
 
     # --- Header ---
     with ui.header().classes("items-center justify-between"):
-        ui.label("Fight Analyzer — Fight Review").classes("text-xl font-bold")
+        ui.label("Fighter IQ — Fight Review").classes("text-xl font-bold")
         ui.label(f"Persona: {persona.name}").classes("text-sm opacity-75")
 
     with ui.column().classes("w-full max-w-5xl mx-auto p-4 gap-4"):

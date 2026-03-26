@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 
-from fight_analyzer import (
+from fighter_iq import (
     BBox,
     ColorHistogram,
     DetectedPerson,

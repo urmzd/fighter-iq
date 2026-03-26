@@ -1,54 +1,80 @@
-# Architecture — Fight Analyzer
+# Architecture — Fighter IQ
 
 ## 1. System Overview
+
+The pipeline is organized around four service boundaries, each defined by a Protocol in `protocols.py`:
 
 ```
 Video File
   │
   ▼
-Frame Extraction (extractor.py, OpenCV, configurable interval)
-  │
-  ▼
-YOLO Pose Detection (detector.py, YOLOv8n-pose)
-  │
-  ├─ 3-stage role classification: spectator → referee → fighter
-  └─ Color-histogram identity tracking (profile bootstrap + matching)
-  │
-  ▼
-VLM Frame Description (analyzer.py, Qwen2.5-VL-7B-Instruct)
-  │
-  ▼
-Spatial Metrics (spatial.py — control score, proximity, movement vectors, impact)
-  │
-  ▼
-Segment Stitching (summarizer.py, Qwen2.5-1.5B-Instruct)
-  │
-  ▼
-Commentary Generation (commentary.py — persona-styled LLM text)
-  │
-  ▼
-TTS Synthesis (tts.py, Kokoro-82M)
-  │
-  ▼
-Annotated Video Rendering (renderer.py — interpolated overlays on every source frame)
-  │
-  ▼
-Review UI (review_ui.py — NiceGUI web player with synced video + audio + commentary)
+┌─── Ingestor (services/ingestor.py) ───────────────────────────────┐
+│  Frame Extraction (extractor.py, OpenCV, configurable interval)   │
+└───────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+┌─── Embedding Model (services/embedder.py) ────────────────────────┐
+│  CLIP ViT-B/32 → 512-dim vectors for similarity + clustering     │
+└───────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+┌─── Agent (services/agent.py) ─────────────────────────────────────┐
+│  YOLO Pose Detection (detector.py, YOLOv8n-pose)                  │
+│    ├─ 3-stage role classification: spectator → referee → fighter   │
+│    └─ Color-histogram identity tracking                            │
+│  VLM Frame Description (analyzer.py, Qwen2.5-VL-7B-Instruct)     │
+│  Spatial Metrics (spatial.py — control, proximity, impact)         │
+│  Segment Stitching (summarizer.py, Qwen2.5-1.5B-Instruct)        │
+└───────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+┌─── Strategy Service (services/strategy.py) ───────────────────────┐
+│  Tactic identification (keyword + embedding boundary detection)    │
+│  Strategy classification (pressure, counter, grapple-dominant...)  │
+└───────────────────────────────┬───────────────────────────────────┘
+                                │
+                                ▼
+              Commentary + TTS + Rendering + Review UI
 ```
 
-The pipeline runs in two phases:
+The pipeline runs in three phases:
 
-- **Phase 1** (per-frame): YOLO detection → role classification → identity tracking → VLM description → spatial metrics. Models loaded: YOLOv8n-pose + Qwen2.5-VL-7B.
-- **Phase 2** (batch): Segment stitching → final summary. Models loaded: Qwen2.5-1.5B.
+- **Phase 1** (per-frame): Ingestor yields frames → Embedder produces CLIP vectors → Agent runs detection, VLM description, spatial metrics. Models loaded: YOLOv8n-pose + Qwen2.5-VL-7B + CLIP ViT-B/32.
+- **Phase 2** (batch): Agent stitches frame batches into segment narratives + final summary. Models loaded: Qwen2.5-1.5B.
+- **Phase 3** (strategy): Strategy Service identifies tactics from frame analyses + embeddings, classifies strategies from tactic sequences.
 
 A separate `review` command handles commentary generation, TTS, video rendering, and the web UI.
+
+### Domain Model
+
+- **Tactic** (`models.py`): An atomic fighting action (jab, takedown, slip, angle cut) with category, timestamps, confidence, and actor attribution.
+- **Strategy** (`models.py`): A sequence of tactics forming a game plan (pressure fighting, counter-striking, grapple-dominant) with type classification and confidence.
+- **FrameEmbedding** (`models.py`): CLIP vector for a frame, used for similarity clustering and action boundary detection.
 
 ---
 
 ## 2. Module Map
 
 ### `__init__.py`
-Data models shared across the pipeline. Key types: `PersonRole` and `FighterIdentity` enums, `BBox` (with center/area properties), `Keypoint` (x, y, confidence), `ColorHistogram` (HSV histogram + dominant color), `FighterProfile` (identity + histogram + staleness tracking), `DetectedPerson` (raw YOLO output), `FighterDetection` (pipeline output with optional identity), `FrameAnalysis`, `SegmentSummary`, `AnalysisResult`.
+Core data models shared across the pipeline. Key types: `PersonRole` and `FighterIdentity` enums, `BBox` (with center/area properties), `Keypoint` (x, y, confidence), `ColorHistogram` (HSV histogram + dominant color), `FighterProfile` (identity + histogram + staleness tracking), `DetectedPerson` (raw YOLO output), `FighterDetection` (pipeline output with optional identity), `FrameAnalysis`, `SegmentSummary`, `AnalysisResult`.
+
+### `models.py`
+Fighter IQ domain model. Defines `TacticCategory` and `StrategyType` enums, `Tactic` (atomic action with name, category, timestamps, confidence, actor), `Strategy` (game plan with type, tactic sequence, confidence), `FrameEmbedding` (CLIP vector + timestamp). Includes serialization helpers for JSON round-tripping.
+
+### `protocols.py`
+Four `@runtime_checkable` Protocol interfaces defining the service boundaries: `Ingestor` (frame extraction), `EmbeddingModel` (image → vector), `Agent` (frame analysis + summarization), `StrategyService` (tactic/strategy classification).
+
+### `services/ingestor.py`
+`VideoIngestor` class wrapping `extractor.py`. Implements the `Ingestor` protocol.
+
+### `services/embedder.py`
+`CLIPEmbedder` class using open_clip ViT-B/32 for 512-dim image embeddings. Implements the `EmbeddingModel` protocol. Supports single-frame and batch embedding with cosine similarity helper.
+
+### `services/agent.py`
+`FightAgent` class encapsulating detection + VLM + spatial + summarization. Implements the `Agent` protocol. Owns model lifecycle (load/unload for YOLO, VLM, text model) and fighter profile tracking state. Delegates to `detector.py`, `analyzer.py`, `spatial.py`, `summarizer.py`.
+
+### `services/strategy.py`
+`FightStrategyService` class for tactic identification and strategy classification. Implements the `StrategyService` protocol. Uses keyword matching on VLM descriptions + CLIP embedding similarity for action boundary detection. Classifies strategies via sliding-window tactic category distributions.
 
 ### `extractor.py`
 OpenCV-based frame extraction. Reads video at a configurable interval (default 1 fps), yields `(timestamp, PIL.Image)` tuples. Supports `max_duration` cutoff.
@@ -66,7 +92,7 @@ Computes four spatial metrics from fighter detections: `compute_control()` (−1
 OpenCV frame annotation. Draws COCO-17 skeleton connections, fighter bounding boxes (green = A, blue = B), referee box (gray), control score bar, impact border (red), movement vector arrows (yellow), and incomplete-frame notices.
 
 ### `pipeline.py`
-Two-phase orchestration. Phase 1 loops over extracted frames: runs detection with identity tracking (cold-start or profile path), VLM description, spatial metrics, and optional live OpenCV visualization. Phase 2 stitches frame batches into segment narratives and a final summary. Handles graceful shutdown (SIGINT/SIGTERM) and serialization to JSON.
+Three-phase orchestrator wiring the four services together. Phase 1: Ingestor yields frames → Embedder produces vectors → Agent analyzes each frame. Phase 2: Agent stitches segments + final summary. Phase 3: Strategy Service identifies tactics and classifies strategies. Handles live event streaming, OpenCV visualization, graceful shutdown (SIGINT/SIGTERM), and JSON serialization including tactics/strategies.
 
 ### `summarizer.py`
 Qwen2.5-1.5B-Instruct (4-bit, via mlx-lm) for text summarization. `stitch_segment()` takes a batch of `FrameAnalysis` objects and produces a 3–5 sentence narrative. `final_summary()` takes all segment summaries and produces a 4–6 sentence overall analysis.
@@ -124,7 +150,7 @@ detect_fighters() — detector.py:412
 ### Profile Path (after bootstrap)
 
 ```
-pipeline.py Phase 1, profiles_initialized=True  (pipeline.py:113)
+FightAgent._detect_with_profiles()  (services/agent.py)
   │
   ├─ detect_persons()        → Same raw YOLO detection
   ├─ filter_spectators()     → Same spectator filtering
@@ -220,13 +246,13 @@ Dropping from 3 to 2 detected persons triggers the `<= 2` guards in both `filter
 
 Remove the `len(candidates) <= 2` gate in `filter_referee()`. Instead, score **all** non-spectator, non-matched persons against the referee heuristic even when there are only 2. Apply a minimum score threshold (like the 0.4 already used in `filter_referee_with_profiles()` at detector.py:406) so the system won't mark a real fighter as referee when the score is low.
 
-**File:** `src/fight_analyzer/detector.py` — `filter_referee()` (line 113) and `detect_fighters()` (line 412)
+**File:** `src/fighter_iq/detector.py` — `filter_referee()` (line 113) and `detect_fighters()` (line 412)
 
 ### Fix 2 (Critical): Lower YOLO Confidence Threshold
 
 Drop from 0.80 → 0.50. YOLOv8 is already filtering to class 0 (person-only); 0.50 retains occluded and unusual-pose detections while still rejecting pure noise. This keeps 3 people visible more consistently, preventing the cascade failure where `<= 2` guards skip both filter stages.
 
-**File:** `src/fight_analyzer/detector.py` — `detect_persons()` (line 42)
+**File:** `src/fighter_iq/detector.py` — `detect_persons()` (line 42)
 
 ### Fix 3 (High Value): Pose-Based Referee Detection
 
@@ -237,7 +263,7 @@ Use the 17 COCO keypoints already extracted to distinguish referee from fighters
 
 Compute a `pose_referee_score` from keypoints alongside the existing bbox-geometry heuristics. This is more robust than aspect ratio alone because it uses actual body pose rather than bounding box shape.
 
-**File:** `src/fight_analyzer/detector.py` — new helper `_compute_pose_referee_score(keypoints)`, integrated into both `filter_referee()` and `filter_referee_with_profiles()`
+**File:** `src/fighter_iq/detector.py` — new helper `_compute_pose_referee_score(keypoints)`, integrated into both `filter_referee()` and `filter_referee_with_profiles()`
 
 ### Fix 4 (High Value): Keypoint-Based Identity Matching
 
@@ -247,7 +273,7 @@ Add keypoint spatial features to `match_profiles()`:
 
 Suggested weight distribution: 60% color histogram, 20% keypoint-spatial proximity, 20% body proportion similarity.
 
-**File:** `src/fight_analyzer/detector.py` — `match_profiles()` (line 280)
+**File:** `src/fighter_iq/detector.py` — `match_profiles()` (line 280)
 
 ### Fix 5 (Medium): Temporal Consistency via Kalman Filter
 
@@ -257,4 +283,4 @@ Replace the raw bbox center matching in `match_profiles()` with a Kalman filter 
 
 During grappling, the lower-50% bbox crop in `extract_color_histogram()` (detector.py:199) often contains both fighters' bodies. Use the keypoint hip positions (indices 11, 12 in the COCO-17 layout) to create a tighter polygonal mask around just the target fighter's shorts/legs region, excluding the opponent's body from the histogram computation.
 
-**File:** `src/fight_analyzer/detector.py` — `extract_color_histogram()` (line 199)
+**File:** `src/fighter_iq/detector.py` — `extract_color_histogram()` (line 199)

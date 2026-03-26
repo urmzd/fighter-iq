@@ -1,4 +1,4 @@
-"""Fight Analyzer — Video analysis pipeline for martial arts."""
+"""Fighter IQ — Video analysis pipeline for martial arts."""
 
 from __future__ import annotations
 

@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from fight_analyzer.commentary import CommentarySegment
-from fight_analyzer.personas import CommentaryPersona
+from fighter_iq.commentary import CommentarySegment
+from fighter_iq.personas import CommentaryPersona
 
 _MODEL_ID = "mlx-community/Kokoro-82M-bf16"
 _SAMPLE_RATE = 24000
