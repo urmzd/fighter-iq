@@ -7,18 +7,32 @@ from PIL import Image
 from fighter_iq import FighterDetection
 
 # Fighter colors (BGR for OpenCV)
-_COLOR_A = (0, 255, 0)   # green
+_COLOR_A = (0, 255, 0)  # green
 _COLOR_B = (255, 100, 0)  # blue
 _COLOR_IMPACT = (0, 0, 255)  # red
 _COLOR_VECTOR = (0, 255, 255)  # yellow
 _COLOR_REFEREE = (128, 128, 128)  # gray
 
 _SKELETON_PAIRS = [
-    (0, 1), (0, 2), (1, 2), (1, 3), (2, 4),      # face
-    (3, 5), (4, 6),                                  # ears → shoulders
-    (5, 6), (5, 7), (6, 8), (7, 9), (8, 10),        # arms
-    (5, 11), (6, 12), (11, 12),                      # torso
-    (11, 13), (12, 14), (13, 15), (14, 16),          # legs
+    (0, 1),
+    (0, 2),
+    (1, 2),
+    (1, 3),
+    (2, 4),  # face
+    (3, 5),
+    (4, 6),  # ears → shoulders
+    (5, 6),
+    (5, 7),
+    (6, 8),
+    (7, 9),
+    (8, 10),  # arms
+    (5, 11),
+    (6, 12),
+    (11, 12),  # torso
+    (11, 13),
+    (12, 14),
+    (13, 15),
+    (14, 16),  # legs
 ]
 _KEYPOINT_VISIBILITY_THRESHOLD = 0.5
 
@@ -121,8 +135,13 @@ def draw_annotations(
         # Orange "INCOMPLETE" notice instead of control bar
         cv2.rectangle(frame, (0, bar_y), (w, bar_y + bar_h), (0, 140, 255), -1)
         cv2.putText(
-            frame, "INCOMPLETE — <2 fighters detected",
-            (4, bar_y + bar_h - 3), font, font_scale * 0.8, (255, 255, 255), max(1, thickness - 1),
+            frame,
+            "INCOMPLETE — <2 fighters detected",
+            (4, bar_y + bar_h - 3),
+            font,
+            font_scale * 0.8,
+            (255, 255, 255),
+            max(1, thickness - 1),
         )
     else:
         # Control score bar at top of frame
@@ -145,7 +164,8 @@ def draw_annotations(
         # Control label
         ctrl_dir = "A" if score >= 0 else "B"
         ctrl_text = f"Control: {abs(score):.2f} {ctrl_dir}"
-        cv2.putText(frame, ctrl_text, (4, bar_y + bar_h + int(16 * scale)), font, font_scale * 0.8, (255, 255, 255), max(1, thickness - 1))
+        text_pos = (4, bar_y + bar_h + int(16 * scale))
+        cv2.putText(frame, ctrl_text, text_pos, font, font_scale * 0.8, (255, 255, 255), max(1, thickness - 1))
 
     # Impact border
     if impact:

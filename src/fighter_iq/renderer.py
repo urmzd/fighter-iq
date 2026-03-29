@@ -39,9 +39,7 @@ def _interpolate_fighters(
     prev_map = {f.identity: f for f in prev_frame.fighters if f.identity is not None}
     next_map = {f.identity: f for f in next_frame.fighters if f.identity is not None}
 
-    all_identities = list(dict.fromkeys(
-        list(prev_map.keys()) + list(next_map.keys())
-    ))
+    all_identities = list(dict.fromkeys(list(prev_map.keys()) + list(next_map.keys())))
 
     result = []
     for ident in all_identities:
@@ -121,11 +119,7 @@ def render_annotated_video(
 
                     # Attempt interpolation to the next analyzed frame
                     fighters_to_draw = fa.fighters
-                    if (
-                        next_idx is not None
-                        and not fa.incomplete
-                        and not analysis.frames[next_idx].incomplete
-                    ):
+                    if next_idx is not None and not fa.incomplete and not analysis.frames[next_idx].incomplete:
                         next_fa = analysis.frames[next_idx]
                         span = next_fa.timestamp - fa.timestamp
                         if span > 0:

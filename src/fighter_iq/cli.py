@@ -118,6 +118,7 @@ def review(
 ) -> None:
     """Review a fight analysis with annotated video and TTS commentary."""
     import gc
+
     from fighter_iq.personas import get_persona, list_persona_ids
 
     if not analysis.exists():
@@ -141,12 +142,14 @@ def review(
     # 1. Load analysis
     ui.info("Step 1/4: Loading analysis...")
     from fighter_iq.pipeline import load_analysis
+
     result = load_analysis(analysis)
     ui.phase_ok("Analysis loaded", f"{len(result.frames)} frames, {len(result.segments)} segments")
 
     # 2. Render annotated video
     ui.info("Step 2/4: Rendering annotated video...")
     from fighter_iq.renderer import render_annotated_video
+
     output_dir = Path("outputs") / "review"
     output_dir.mkdir(parents=True, exist_ok=True)
     annotated_video_path = output_dir / f"{video.stem}_annotated.mp4"
@@ -156,8 +159,9 @@ def review(
 
     # 3. Generate commentary text
     ui.info("Step 3/4: Generating commentary text...")
-    from fighter_iq.summarizer import load_text_model
     from fighter_iq.commentary import generate_commentary
+    from fighter_iq.summarizer import load_text_model
+
     with ui.spinner("Loading text model..."):
         text_model, text_tokenizer = load_text_model()
     with ui.spinner("Generating commentary..."):
@@ -169,6 +173,7 @@ def review(
     # 4. Synthesize TTS audio
     ui.info("Step 4/4: Synthesizing TTS audio...")
     from fighter_iq.tts import load_tts_model, synthesize_continuous
+
     with ui.spinner("Loading TTS model..."):
         tts_model = load_tts_model()
 
@@ -184,6 +189,7 @@ def review(
     # 5. Launch review UI
     ui.phase_ok(f"Launching review UI on port {port}")
     from fighter_iq.review_ui import launch_review
+
     launch_review(
         video_path=annotated_video_path,
         audio_path=commentary_audio_path,

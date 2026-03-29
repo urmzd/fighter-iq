@@ -1,6 +1,6 @@
 """Segment stitching and final summary using Qwen2.5-1.5B via mlx-lm."""
 
-from mlx_lm import load, generate
+from mlx_lm import generate, load
 
 from fighter_iq import FrameAnalysis, SegmentSummary
 
@@ -24,13 +24,9 @@ def _format_frame_for_prompt(frame: FrameAnalysis) -> str:
 
     incomplete_str = " [INCOMPLETE]" if frame.incomplete else ""
 
-    vectors_str = ", ".join(
-        f"({v[0]:.1f}, {v[1]:.1f})" for v in frame.movement_vectors
-    )
+    vectors_str = ", ".join(f"({v[0]:.1f}, {v[1]:.1f})" for v in frame.movement_vectors)
 
-    control_str = (
-        "N/A" if frame.control_score is None else f"{frame.control_score:.2f}"
-    )
+    control_str = "N/A" if frame.control_score is None else f"{frame.control_score:.2f}"
 
     return (
         f"[{frame.timestamp:.1f}s] {frame.description}{impact_str}{incomplete_str}\n"
@@ -40,9 +36,7 @@ def _format_frame_for_prompt(frame: FrameAnalysis) -> str:
     )
 
 
-def stitch_segment(
-    model, tokenizer, frames: list[FrameAnalysis]
-) -> SegmentSummary:
+def stitch_segment(model, tokenizer, frames: list[FrameAnalysis]) -> SegmentSummary:
     """Stitch a batch of frame analyses into a coherent segment narrative."""
     frames_text = "\n".join(_format_frame_for_prompt(f) for f in frames)
 
@@ -55,13 +49,9 @@ def stitch_segment(
     )
 
     messages = [{"role": "user", "content": prompt}]
-    formatted = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-    response = generate(
-        model, tokenizer, prompt=formatted, max_tokens=250, verbose=False
-    )
+    response = generate(model, tokenizer, prompt=formatted, max_tokens=250, verbose=False)
 
     valid_scores = [f.control_score for f in frames if f.control_score is not None]
     avg_control = sum(valid_scores) / len(valid_scores) if valid_scores else 0.0
@@ -77,9 +67,7 @@ def stitch_segment(
     )
 
 
-def final_summary(
-    model, tokenizer, segments: list[SegmentSummary]
-) -> str:
+def final_summary(model, tokenizer, segments: list[SegmentSummary]) -> str:
     """Generate a final overall analysis from all segment summaries."""
     segments_text = ""
     for i, seg in enumerate(segments):
@@ -101,12 +89,8 @@ def final_summary(
     )
 
     messages = [{"role": "user", "content": prompt}]
-    formatted = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-    response = generate(
-        model, tokenizer, prompt=formatted, max_tokens=400, verbose=False
-    )
+    response = generate(model, tokenizer, prompt=formatted, max_tokens=400, verbose=False)
 
     return response.strip()

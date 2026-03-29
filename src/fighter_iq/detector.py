@@ -44,11 +44,10 @@ def detect_persons(model: YOLO, image: Image.Image) -> list[DetectedPerson]:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
 
             # Extract 17 COCO keypoints
-            kp_xy = result.keypoints.xy[i]    # shape (17, 2)
+            kp_xy = result.keypoints.xy[i]  # shape (17, 2)
             kp_conf = result.keypoints.conf[i]  # shape (17,)
             keypoints = [
-                Keypoint(x=float(kp_xy[j][0]), y=float(kp_xy[j][1]), confidence=float(kp_conf[j]))
-                for j in range(17)
+                Keypoint(x=float(kp_xy[j][0]), y=float(kp_xy[j][1]), confidence=float(kp_conf[j])) for j in range(17)
             ]
 
             persons.append(
@@ -63,9 +62,7 @@ def detect_persons(model: YOLO, image: Image.Image) -> list[DetectedPerson]:
     return persons
 
 
-def filter_spectators(
-    persons: list[DetectedPerson], frame_width: int, frame_height: int
-) -> list[DetectedPerson]:
+def filter_spectators(persons: list[DetectedPerson], frame_width: int, frame_height: int) -> list[DetectedPerson]:
     """Stage 2: Mark spectators based on bbox size and position.
 
     Only runs when >2 persons detected; with 2 or fewer, nothing to filter.
@@ -92,12 +89,7 @@ def filter_spectators(
             continue
 
         # Center in peripheral margin
-        in_margin = (
-            cx < margin_x
-            or cx > frame_width - margin_x
-            or cy < margin_y
-            or cy > frame_height - margin_y
-        )
+        in_margin = cx < margin_x or cx > frame_width - margin_x or cy < margin_y or cy > frame_height - margin_y
         if in_margin:
             person.role = PersonRole.SPECTATOR
             continue
@@ -110,9 +102,7 @@ def filter_spectators(
     return persons
 
 
-def filter_referee(
-    persons: list[DetectedPerson], frame_width: int, frame_height: int
-) -> list[DetectedPerson]:
+def filter_referee(persons: list[DetectedPerson], frame_width: int, frame_height: int) -> list[DetectedPerson]:
     """Stage 3: Mark the most referee-like candidate among non-spectators.
 
     Only runs when >2 non-spectator persons remain. Presumes the two largest
@@ -153,9 +143,7 @@ def filter_referee(
             score += 0.2 * ((aspect - 1.2) / 0.6)
 
         # Proximity to midpoint between the two largest — 30%
-        dist = math.sqrt(
-            (bbox.center[0] - mid_x) ** 2 + (bbox.center[1] - mid_y) ** 2
-        )
+        dist = math.sqrt((bbox.center[0] - mid_x) ** 2 + (bbox.center[1] - mid_y) ** 2)
         proximity = 1.0 - min(dist / frame_diag, 1.0)
         score += proximity * 0.3
 
@@ -196,9 +184,7 @@ def _hsv_to_color_name(h: int, s: int, v: int) -> str:
     return "unknown"
 
 
-def extract_color_histogram(
-    image: Image.Image, bbox: BBox, lower_ratio: float = 0.5
-) -> ColorHistogram:
+def extract_color_histogram(image: Image.Image, bbox: BBox, lower_ratio: float = 0.5) -> ColorHistogram:
     """Extract an HSV color histogram from the lower portion (shorts region) of a bbox."""
     img_w, img_h = image.size
     x1 = max(0, int(bbox.x1))
@@ -217,7 +203,9 @@ def extract_color_histogram(
 
     hsv = cv2.cvtColor(np.array(crop), cv2.COLOR_RGB2HSV)
     hist = cv2.calcHist(
-        [hsv], [0, 1], None,
+        [hsv],
+        [0, 1],
+        None,
         [ColorHistogram.H_BINS, ColorHistogram.S_BINS],
         [0, 180, 0, 256],
     )
@@ -236,23 +224,23 @@ def extract_color_histogram(
     return ColorHistogram(histogram=flat, dominant_color_name=color_name, dominant_hsv=(dom_h, dom_s, dom_v))
 
 
-def initialize_profiles(
-    fighters: list[DetectedPerson], image: Image.Image
-) -> list[FighterProfile]:
+def initialize_profiles(fighters: list[DetectedPerson], image: Image.Image) -> list[FighterProfile]:
     """Create initial fighter profiles from the first confirmed fighter pair."""
     profiles: list[FighterProfile] = []
     identities = [FighterIdentity.FIGHTER_A, FighterIdentity.FIGHTER_B]
     for i, person in enumerate(fighters[:2]):
         hist = extract_color_histogram(image, person.bbox)
-        profiles.append(FighterProfile(
-            identity=identities[i],
-            color_histogram=hist,
-            appearance_description=f"{hist.dominant_color_name} shorts",
-            last_bbox=person.bbox,
-            last_confidence=person.confidence,
-            frames_seen=1,
-            frames_since_last_seen=0,
-        ))
+        profiles.append(
+            FighterProfile(
+                identity=identities[i],
+                color_histogram=hist,
+                appearance_description=f"{hist.dominant_color_name} shorts",
+                last_bbox=person.bbox,
+                last_confidence=person.confidence,
+                frames_seen=1,
+                frames_since_last_seen=0,
+            )
+        )
     return profiles
 
 
@@ -315,7 +303,7 @@ def match_profiles(
             px, py = person.bbox.center
             lx, ly = profile.last_bbox.center
             dist = math.sqrt((px - lx) ** 2 + (py - ly) ** 2)
-            max_dist = math.sqrt(image.width ** 2 + image.height ** 2)
+            max_dist = math.sqrt(image.width**2 + image.height**2)
             proximity = 1.0 - min(dist / max_dist, 1.0)
             staleness_factor = 1.0 / (1.0 + profile.frames_since_last_seen)
             spatial = proximity * staleness_factor
@@ -374,7 +362,7 @@ def filter_referee_with_profiles(
     mid_x = sum(f.bbox.center[0] for f in fighters_for_ref) / len(fighters_for_ref)
     mid_y = sum(f.bbox.center[1] for f in fighters_for_ref) / len(fighters_for_ref)
     fighter_min_area = min(f.bbox.area for f in fighters_for_ref)
-    frame_diag = math.sqrt(frame_w ** 2 + frame_h ** 2)
+    frame_diag = math.sqrt(frame_w**2 + frame_h**2)
 
     best_score = -1.0
     best_candidate: DetectedPerson | None = None

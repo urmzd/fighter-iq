@@ -16,16 +16,14 @@ from fighter_iq import (
     FrameAnalysis,
     Keypoint,
     SegmentSummary,
+    ui,
 )
-from fighter_iq import ui
 from fighter_iq.event_stream import EventStream
 from fighter_iq.models import (
     FrameEmbedding,
     Strategy,
     Tactic,
-    strategy_from_dict,
     strategy_to_dict,
-    tactic_from_dict,
     tactic_to_dict,
 )
 from fighter_iq.shutdown import install_signal_handlers, is_shutdown_requested
@@ -65,7 +63,12 @@ def run_pipeline(
 
     # ── Create services ───────────────────────────────────────────────
 
-    from fighter_iq.services import CLIPEmbedder, FightAgent, FightStrategyService, VideoIngestor
+    from fighter_iq.services import (
+        CLIPEmbedder,
+        FightAgent,
+        FightStrategyService,
+        VideoIngestor,
+    )
 
     ingestor = VideoIngestor()
     embedder = CLIPEmbedder()
@@ -108,7 +111,8 @@ def run_pipeline(
                 stream.add(ts_str, "DETECT", f"{len(fighters)} fighter(s) (conf: {conf_str})")
 
                 if frame_analysis.filtered_referee:
-                    stream.add(ts_str, "FILTERED", f"Excluded: referee (conf: {frame_analysis.filtered_referee.confidence:.2f})")
+                    conf = frame_analysis.filtered_referee.confidence
+                    stream.add(ts_str, "FILTERED", f"Excluded: referee (conf: {conf:.2f})")
 
                 if frame_analysis.incomplete:
                     stream.add(ts_str, "INCOMPLETE", f"Only {len(fighters)} fighter(s) detected")
@@ -196,9 +200,7 @@ def run_pipeline(
                 ui.console.print()
                 narratives = [s.narrative for s in result.segments]
                 result.summary = agent.summarize_fight(narratives)
-                ui.console.print(
-                    Panel(result.summary, title="Final Summary", border_style="green")
-                )
+                ui.console.print(Panel(result.summary, title="Final Summary", border_style="green"))
         finally:
             agent.unload_text_model()
 
@@ -264,11 +266,7 @@ def load_analysis(path: Path) -> AnalysisResult:
         fighters: list[FighterDetection] = []
         for d in f.get("fighters", []):
             bbox = BBox(*d["bbox"])
-            kps = (
-                [Keypoint(k["x"], k["y"], k["confidence"]) for k in d["keypoints"]]
-                if d.get("keypoints")
-                else None
-            )
+            kps = [Keypoint(k["x"], k["y"], k["confidence"]) for k in d["keypoints"]] if d.get("keypoints") else None
             identity = FighterIdentity(d["identity"]) if d.get("identity") else None
             fighters.append(
                 FighterDetection(
@@ -337,7 +335,9 @@ def _serialize_result(
                         "keypoints": [
                             {"x": round(kp.x, 1), "y": round(kp.y, 1), "confidence": round(kp.confidence, 3)}
                             for kp in d.keypoints
-                        ] if d.keypoints else None,
+                        ]
+                        if d.keypoints
+                        else None,
                     }
                     for d in f.fighters
                 ],

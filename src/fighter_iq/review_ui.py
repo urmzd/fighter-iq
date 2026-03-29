@@ -32,9 +32,7 @@ def launch_review(
 
     @ui.page("/")
     def review_page():
-        _build_review_page(
-            video_url, audio_url, analysis, commentary_segments, persona
-        )
+        _build_review_page(video_url, audio_url, analysis, commentary_segments, persona)
 
     ui.run(port=port, title="Fighter IQ — Fight Review", reload=False)
 
@@ -64,9 +62,9 @@ def _build_review_page(
 
         # --- Transport Controls ---
         with ui.row().classes("items-center gap-4 w-full"):
-            play_btn = ui.button("Play", on_click=lambda: _toggle_playback(
-                video, audio, play_btn, is_playing
-            )).props("icon=play_arrow")
+            play_btn = ui.button("Play", on_click=lambda: _toggle_playback(video, audio, play_btn, is_playing)).props(
+                "icon=play_arrow"
+            )
 
             time_label = ui.label("0:00 / 0:00").classes("font-mono text-sm")
 
@@ -80,9 +78,7 @@ def _build_review_page(
         # --- Commentary Text Panel ---
         with ui.card().classes("w-full"):
             ui.label("Commentary").classes("text-sm font-bold opacity-60")
-            commentary_text = ui.label("Press play to begin...").classes(
-                "text-base leading-relaxed"
-            )
+            commentary_text = ui.label("Press play to begin...").classes("text-base leading-relaxed")
 
         # --- Segment Navigation ---
         if commentary_segments:
@@ -91,9 +87,7 @@ def _build_review_page(
                 for seg in commentary_segments:
                     ui.button(
                         f"Seg {seg.segment_index + 1}",
-                        on_click=lambda s=seg: _jump_to_segment(
-                            video, audio, s, commentary_text
-                        ),
+                        on_click=lambda s=seg: _jump_to_segment(video, audio, s, commentary_text),
                     ).props("dense size=sm")
 
         # --- Segment Summary Table ---
@@ -102,9 +96,7 @@ def _build_review_page(
                 for i, seg in enumerate(analysis.segments):
                     time_range = f"{seg.timestamps[0]:.1f}s – {seg.timestamps[-1]:.1f}s"
                     with ui.card().classes("w-full mb-2"):
-                        ui.label(f"Segment {i + 1} ({time_range})").classes(
-                            "text-sm font-bold"
-                        )
+                        ui.label(f"Segment {i + 1} ({time_range})").classes("text-sm font-bold")
                         ui.label(seg.narrative).classes("text-sm")
                         with ui.row().classes("gap-4 text-xs opacity-60"):
                             ui.label(f"Control: {seg.avg_control:.2f}")
@@ -119,8 +111,14 @@ def _build_review_page(
     ui.timer(
         0.25,
         lambda: _sync_ui(
-            video, audio, time_label, seek_slider, commentary_text,
-            commentary_segments, play_btn, is_playing,
+            video,
+            audio,
+            time_label,
+            seek_slider,
+            commentary_text,
+            commentary_segments,
+            play_btn,
+            is_playing,
         ),
     )
 
@@ -144,9 +142,7 @@ async def _toggle_playback(video, audio, play_btn, is_playing):
 async def _on_seek(video, audio, value):
     """Handle seek slider changes."""
     try:
-        duration = await ui.run_javascript(
-            f'getHtmlElement("{video.id}").duration || 0'
-        )
+        duration = await ui.run_javascript(f'getHtmlElement("{video.id}").duration || 0')
         if duration > 0:
             target = float(value) / 100.0 * duration
             video.seek(target)
@@ -158,22 +154,15 @@ async def _on_seek(video, audio, value):
 async def _jump_to_segment(video, audio, segment: CommentarySegment, commentary_text):
     """Jump playback to a specific segment's start time."""
     video.seek(segment.start_time)
-    await ui.run_javascript(
-        f'getHtmlElement("{audio.id}").currentTime = {segment.start_time}'
-    )
+    await ui.run_javascript(f'getHtmlElement("{audio.id}").currentTime = {segment.start_time}')
     commentary_text.text = segment.text
 
 
-async def _sync_ui(video, audio, time_label, seek_slider, commentary_text, segments,
-                   play_btn, is_playing):
+async def _sync_ui(video, audio, time_label, seek_slider, commentary_text, segments, play_btn, is_playing):
     """Periodically sync the UI state with video playback position."""
     try:
-        current_time = await ui.run_javascript(
-            f'getHtmlElement("{video.id}").currentTime || 0'
-        )
-        duration = await ui.run_javascript(
-            f'getHtmlElement("{video.id}").duration || 0'
-        )
+        current_time = await ui.run_javascript(f'getHtmlElement("{video.id}").currentTime || 0')
+        duration = await ui.run_javascript(f'getHtmlElement("{video.id}").duration || 0')
     except Exception:
         return
 
@@ -198,9 +187,7 @@ async def _sync_ui(video, audio, time_label, seek_slider, commentary_text, segme
 
     # Auto-pause at end and reset Play button
     try:
-        is_ended = await ui.run_javascript(
-            f'getHtmlElement("{video.id}").ended || false'
-        )
+        is_ended = await ui.run_javascript(f'getHtmlElement("{video.id}").ended || false')
     except Exception:
         is_ended = False
 
@@ -213,9 +200,7 @@ async def _sync_ui(video, audio, time_label, seek_slider, commentary_text, segme
 
     # Sync audio position if drifted > 1s (wider threshold avoids micro-interruptions)
     try:
-        audio_time = await ui.run_javascript(
-            f'getHtmlElement("{audio.id}").currentTime || 0'
-        )
+        audio_time = await ui.run_javascript(f'getHtmlElement("{audio.id}").currentTime || 0')
         if abs(audio_time - current_time) > 1.0:
             audio.seek(current_time)
     except Exception:
