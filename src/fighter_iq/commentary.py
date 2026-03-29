@@ -56,22 +56,16 @@ def generate_commentary(
         end_frame_idx = min(start_frame_idx + batch_size, len(result.frames))
         frames_in_segment = result.frames[start_frame_idx:end_frame_idx]
 
-        user_prompt = _build_segment_prompt(
-            segment, frames_in_segment, seg_idx, len(result.segments)
-        )
+        user_prompt = _build_segment_prompt(segment, frames_in_segment, seg_idx, len(result.segments))
 
         messages = [
             {"role": "system", "content": persona.system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        formatted = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
+        formatted = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
         sampler = make_sampler(temp=0.7)
-        response = generate(
-            model, tokenizer, prompt=formatted, max_tokens=200, sampler=sampler, verbose=False
-        )
+        response = generate(model, tokenizer, prompt=formatted, max_tokens=200, sampler=sampler, verbose=False)
 
         start_time = segment.timestamps[0]
         end_time = segment.timestamps[-1]

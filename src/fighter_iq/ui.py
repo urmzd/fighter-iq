@@ -3,7 +3,6 @@
 All output goes to stderr so stdout remains clean for piped data.
 """
 
-import sys
 from contextlib import contextmanager
 from typing import Generator
 

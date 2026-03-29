@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from PIL import Image
-from mlx_vlm import load, generate
+from mlx_vlm import generate, load
 from mlx_vlm.prompt_utils import apply_chat_template
 from mlx_vlm.utils import load_config
+from PIL import Image
 
 _VLM_MODEL_ID = "mlx-community/Qwen2.5-VL-7B-Instruct-4bit"
 
@@ -31,14 +31,10 @@ def _build_frame_prompt(
         parts.append("\nFighters in this frame:")
         for label, desc in fighter_descriptions:
             parts.append(f"- {label}: wearing {desc}")
-        parts.append(
-            "Refer to fighters by their label based on clothing, NOT by left/right position."
-        )
+        parts.append("Refer to fighters by their label based on clothing, NOT by left/right position.")
 
     if referee_detected:
-        parts.append(
-            "A referee has been identified — do NOT describe the referee as a fighter."
-        )
+        parts.append("A referee has been identified — do NOT describe the referee as a fighter.")
 
     return "\n".join(parts)
 

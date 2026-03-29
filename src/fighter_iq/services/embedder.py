@@ -29,9 +29,7 @@ class CLIPEmbedder:
             return
         import open_clip
 
-        model, _, preprocess = open_clip.create_model_and_transforms(
-            self._model_name, pretrained=self._pretrained
-        )
+        model, _, preprocess = open_clip.create_model_and_transforms(self._model_name, pretrained=self._pretrained)
         model.eval()
         self._model = model
         self._preprocess = preprocess
@@ -69,9 +67,7 @@ class CLIPEmbedder:
             features /= features.norm(dim=-1, keepdim=True)
         return [features[i].cpu().numpy() for i in range(len(images))]
 
-    def make_embedding(
-        self, timestamp: float, image: Image.Image, vector: np.ndarray
-    ) -> FrameEmbedding:
+    def make_embedding(self, timestamp: float, image: Image.Image, vector: np.ndarray) -> FrameEmbedding:
         """Wrap a raw vector into a FrameEmbedding with metadata."""
         img_hash = hashlib.md5(image.tobytes()[:4096]).hexdigest()[:12]
         return FrameEmbedding(timestamp=timestamp, embedding=vector, image_hash=img_hash)

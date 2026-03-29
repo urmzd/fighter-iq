@@ -45,8 +45,8 @@ class FightAgent:
 
     def load_detection_models(self) -> None:
         """Load YOLO + VLM models for per-frame analysis (Phase 1)."""
-        from fighter_iq.detector import load_detector
         from fighter_iq.analyzer import load_vision_model
+        from fighter_iq.detector import load_detector
 
         self._yolo = load_detector()
         self._vlm_model, self._vlm_processor, self._vlm_config = load_vision_model()
@@ -84,20 +84,17 @@ class FightAgent:
         context: dict | None = None,
     ) -> FrameAnalysis:
         """Detect fighters, describe action, compute spatial metrics for one frame."""
+        from fighter_iq.analyzer import analyze_frame as vlm_analyze
         from fighter_iq.detector import (
-            detect_persons,
             detect_fighters,
+            detect_persons,
             filter_spectators,
             initialize_profiles,
-            update_profile,
-            match_profiles,
-            filter_referee_with_profiles,
         )
-        from fighter_iq.analyzer import analyze_frame as vlm_analyze
         from fighter_iq.spatial import (
             compute_control,
-            compute_proximity,
             compute_movement_vectors,
+            compute_proximity,
             detect_impact,
         )
 
@@ -105,36 +102,23 @@ class FightAgent:
         fighter_appearances: dict[str, str] = {}
 
         if self._profiles_initialized:
-            fighters, referee, spectators, fighter_descriptions, fighter_appearances = (
-                self._detect_with_profiles(image)
-            )
+            fighters, referee, spectators, fighter_descriptions, fighter_appearances = self._detect_with_profiles(image)
         else:
-            fighters, referee, spectators = detect_fighters(
-                self._yolo, image, image.width, image.height
-            )
+            fighters, referee, spectators = detect_fighters(self._yolo, image, image.width, image.height)
             # Try to bootstrap profiles
             if len(fighters) == 2 and referee is not None:
                 persons = detect_persons(self._yolo, image)
                 persons = filter_spectators(persons, image.width, image.height)
-                fighter_persons = [
-                    p for p in persons
-                    if p.role in (PersonRole.FIGHTER, PersonRole.UNKNOWN)
-                ]
+                fighter_persons = [p for p in persons if p.role in (PersonRole.FIGHTER, PersonRole.UNKNOWN)]
                 fighter_persons.sort(key=lambda p: p.bbox.area, reverse=True)
                 self._profiles = initialize_profiles(fighter_persons[:2], image)
                 self._profiles_initialized = True
                 for i, f in enumerate(fighters):
-                    f.identity = (
-                        self._profiles[i].identity if i < len(self._profiles) else None
-                    )
+                    f.identity = self._profiles[i].identity if i < len(self._profiles) else None
                 fighter_descriptions = [
-                    (f"Fighter {p.identity.value[-1].upper()}", p.appearance_description)
-                    for p in self._profiles
+                    (f"Fighter {p.identity.value[-1].upper()}", p.appearance_description) for p in self._profiles
                 ]
-                fighter_appearances = {
-                    p.identity.value: p.appearance_description
-                    for p in self._profiles
-                }
+                fighter_appearances = {p.identity.value: p.appearance_description for p in self._profiles}
 
         incomplete = len(fighters) < 2
 
@@ -154,12 +138,8 @@ class FightAgent:
             control = None
             impact, impact_type = False, None
         else:
-            control = compute_control(
-                self._prev_detections, fighters, image.width, image.height
-            )
-            impact, impact_type = detect_impact(
-                self._prev_detections, fighters, description
-            )
+            control = compute_control(self._prev_detections, fighters, image.width, image.height)
+            impact, impact_type = detect_impact(self._prev_detections, fighters, description)
 
         proximity = compute_proximity(fighters, image.width, image.height)
         vectors = compute_movement_vectors(self._prev_detections, fighters)
@@ -195,9 +175,9 @@ class FightAgent:
         """Profile-based detection path (warm start)."""
         from fighter_iq.detector import (
             detect_persons,
+            filter_referee_with_profiles,
             filter_spectators,
             match_profiles,
-            filter_referee_with_profiles,
             update_profile,
         )
 
@@ -214,9 +194,7 @@ class FightAgent:
                     matched_indices.add(i)
                     break
 
-        persons = filter_referee_with_profiles(
-            persons, matched_indices, image.width, image.height
-        )
+        persons = filter_referee_with_profiles(persons, matched_indices, image.width, image.height)
 
         for person, prof in matched_pairs:
             update_profile(prof, person, image)
@@ -241,9 +219,7 @@ class FightAgent:
             if p.role == PersonRole.REFEREE:
                 referee = FighterDetection(bbox=p.bbox, confidence=p.confidence)
             elif p.role == PersonRole.SPECTATOR:
-                spectators.append(
-                    FighterDetection(bbox=p.bbox, confidence=p.confidence)
-                )
+                spectators.append(FighterDetection(bbox=p.bbox, confidence=p.confidence))
 
         matched_ids = {prof.identity for _, prof in matched_pairs}
         for prof in self._profiles:
@@ -255,12 +231,9 @@ class FightAgent:
             self._profiles = []
 
         fighter_descriptions = [
-            (f"Fighter {p.identity.value[-1].upper()}", p.appearance_description)
-            for p in self._profiles
+            (f"Fighter {p.identity.value[-1].upper()}", p.appearance_description) for p in self._profiles
         ]
-        fighter_appearances = {
-            p.identity.value: p.appearance_description for p in self._profiles
-        }
+        fighter_appearances = {p.identity.value: p.appearance_description for p in self._profiles}
 
         return fighters, referee, spectators, fighter_descriptions, fighter_appearances
 

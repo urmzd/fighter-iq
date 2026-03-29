@@ -15,30 +15,92 @@ from fighter_iq.models import (
 
 # Keyword sets reused from spatial.py for tactic classification
 _STRIKE_KEYWORDS = [
-    "punch", "punches", "punching", "kick", "kicks", "kicking",
-    "elbow", "elbows", "knee", "knees", "kneeing",
-    "strike", "strikes", "striking", "hit", "hits", "hitting",
-    "jab", "jabs", "jabbing", "cross", "hook", "uppercut",
-    "roundhouse", "front kick", "side kick", "spinning",
-    "landed", "connects",
+    "punch",
+    "punches",
+    "punching",
+    "kick",
+    "kicks",
+    "kicking",
+    "elbow",
+    "elbows",
+    "knee",
+    "knees",
+    "kneeing",
+    "strike",
+    "strikes",
+    "striking",
+    "hit",
+    "hits",
+    "hitting",
+    "jab",
+    "jabs",
+    "jabbing",
+    "cross",
+    "hook",
+    "uppercut",
+    "roundhouse",
+    "front kick",
+    "side kick",
+    "spinning",
+    "landed",
+    "connects",
 ]
 _GRAPPLE_KEYWORDS = [
-    "takedown", "taken down", "takes down", "clinch", "clinching",
-    "wrestle", "wrestling", "grapple", "grappling",
-    "mount", "mounted", "guard", "side control", "back control",
-    "underhook", "overhook", "double leg", "single leg",
-    "slam", "slams", "suplex", "ground",
+    "takedown",
+    "taken down",
+    "takes down",
+    "clinch",
+    "clinching",
+    "wrestle",
+    "wrestling",
+    "grapple",
+    "grappling",
+    "mount",
+    "mounted",
+    "guard",
+    "side control",
+    "back control",
+    "underhook",
+    "overhook",
+    "double leg",
+    "single leg",
+    "slam",
+    "slams",
+    "suplex",
+    "ground",
 ]
 _MOVEMENT_KEYWORDS = [
-    "advancing", "retreating", "circling", "lateral",
-    "angle", "cutting", "footwork", "stepping",
-    "forward", "backward", "moving",
+    "advancing",
+    "retreating",
+    "circling",
+    "lateral",
+    "angle",
+    "cutting",
+    "footwork",
+    "stepping",
+    "forward",
+    "backward",
+    "moving",
 ]
 _DEFENSE_KEYWORDS = [
-    "block", "blocking", "blocks", "parry", "parries",
-    "slip", "slips", "slipping", "evade", "evading",
-    "dodge", "dodging", "shell", "cover", "covering",
-    "sprawl", "sprawls", "sprawling",
+    "block",
+    "blocking",
+    "blocks",
+    "parry",
+    "parries",
+    "slip",
+    "slips",
+    "slipping",
+    "evade",
+    "evading",
+    "dodge",
+    "dodging",
+    "shell",
+    "cover",
+    "covering",
+    "sprawl",
+    "sprawls",
+    "sprawling",
 ]
 
 # Similarity threshold below which we consider a new action boundary
@@ -118,10 +180,7 @@ class FightStrategyService:
         t = start_time
         while t < end_time:
             window_end = t + window_duration
-            window_tactics = [
-                tc for tc in tactics
-                if tc.end_time > t and tc.start_time < window_end
-            ]
+            window_tactics = [tc for tc in tactics if tc.end_time > t and tc.start_time < window_end]
             if not window_tactics:
                 t = window_end
                 continue
@@ -129,14 +188,16 @@ class FightStrategyService:
             strategy_type = self._classify_window(window_tactics, frames, t, window_end)
             description = self._describe_strategy(strategy_type, window_tactics)
 
-            strategies.append(Strategy(
-                strategy_type=strategy_type,
-                tactics=window_tactics,
-                start_time=t,
-                end_time=min(window_end, end_time),
-                confidence=self._compute_strategy_confidence(window_tactics, strategy_type),
-                description=description,
-            ))
+            strategies.append(
+                Strategy(
+                    strategy_type=strategy_type,
+                    tactics=window_tactics,
+                    start_time=t,
+                    end_time=min(window_end, end_time),
+                    confidence=self._compute_strategy_confidence(window_tactics, strategy_type),
+                    description=description,
+                )
+            )
             t = window_end
 
         return strategies
@@ -187,8 +248,16 @@ class FightStrategyService:
 
     def _extract_strike_name(self, desc: str) -> str:
         specific = [
-            "jab", "cross", "hook", "uppercut", "roundhouse",
-            "front kick", "side kick", "spinning", "elbow", "knee",
+            "jab",
+            "cross",
+            "hook",
+            "uppercut",
+            "roundhouse",
+            "front kick",
+            "side kick",
+            "spinning",
+            "elbow",
+            "knee",
         ]
         for s in specific:
             if s in desc:
@@ -197,8 +266,16 @@ class FightStrategyService:
 
     def _extract_grapple_name(self, desc: str) -> str:
         specific = [
-            "double leg", "single leg", "clinch", "mount", "guard",
-            "side control", "back control", "slam", "suplex", "takedown",
+            "double leg",
+            "single leg",
+            "clinch",
+            "mount",
+            "guard",
+            "side control",
+            "back control",
+            "slam",
+            "suplex",
+            "takedown",
         ]
         for s in specific:
             if s in desc:
@@ -214,8 +291,12 @@ class FightStrategyService:
 
     def _extract_movement_name(self, desc: str) -> str:
         specific = [
-            "angle cut", "circling", "advancing", "retreating",
-            "lateral movement", "footwork",
+            "angle cut",
+            "circling",
+            "advancing",
+            "retreating",
+            "lateral movement",
+            "footwork",
         ]
         for s in specific:
             if s in desc:
@@ -285,10 +366,7 @@ class FightStrategyService:
         defense_pct = cat_counts.get(TacticCategory.DEFENSE, 0) / total
 
         # Check movement vectors for forward pressure
-        window_frames = [
-            f for f in frames
-            if window_start <= f.timestamp < window_end
-        ]
+        window_frames = [f for f in frames if window_start <= f.timestamp < window_end]
         forward_pressure = self._has_forward_pressure(window_frames)
 
         if strike_pct >= 0.6 and forward_pressure:
@@ -305,14 +383,10 @@ class FightStrategyService:
         """Check if the dominant fighter is consistently advancing."""
         if not frames:
             return False
-        positive_control = sum(
-            1 for f in frames if f.control_score is not None and abs(f.control_score) > 0.2
-        )
+        positive_control = sum(1 for f in frames if f.control_score is not None and abs(f.control_score) > 0.2)
         return positive_control > len(frames) * 0.5
 
-    def _compute_strategy_confidence(
-        self, tactics: list[Tactic], strategy_type: StrategyType
-    ) -> float:
+    def _compute_strategy_confidence(self, tactics: list[Tactic], strategy_type: StrategyType) -> float:
         """Compute confidence for a strategy classification."""
         if not tactics:
             return 0.0
@@ -321,9 +395,7 @@ class FightStrategyService:
         clarity_bonus = 0.1 if strategy_type != StrategyType.MIXED else 0.0
         return round(min(1.0, avg_tactic_conf + clarity_bonus), 3)
 
-    def _describe_strategy(
-        self, strategy_type: StrategyType, tactics: list[Tactic]
-    ) -> str:
+    def _describe_strategy(self, strategy_type: StrategyType, tactics: list[Tactic]) -> str:
         """Generate a human-readable strategy description."""
         tactic_names = list({t.name for t in tactics})
         names_str = ", ".join(tactic_names[:4])

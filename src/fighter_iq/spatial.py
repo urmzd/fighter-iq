@@ -6,30 +6,69 @@ from fighter_iq import BBox, FighterDetection
 
 # Keywords that indicate impact in VLM descriptions
 _STRIKE_KEYWORDS = [
-    "punch", "punches", "punching",
-    "kick", "kicks", "kicking",
-    "elbow", "elbows",
-    "knee", "knees", "kneeing",
-    "strike", "strikes", "striking",
-    "hit", "hits", "hitting",
-    "jab", "jabs", "jabbing",
-    "cross", "hook", "uppercut",
-    "roundhouse", "front kick", "side kick",
-    "spinning", "landed", "connects",
+    "punch",
+    "punches",
+    "punching",
+    "kick",
+    "kicks",
+    "kicking",
+    "elbow",
+    "elbows",
+    "knee",
+    "knees",
+    "kneeing",
+    "strike",
+    "strikes",
+    "striking",
+    "hit",
+    "hits",
+    "hitting",
+    "jab",
+    "jabs",
+    "jabbing",
+    "cross",
+    "hook",
+    "uppercut",
+    "roundhouse",
+    "front kick",
+    "side kick",
+    "spinning",
+    "landed",
+    "connects",
 ]
 _TAKEDOWN_KEYWORDS = [
-    "takedown", "taken down", "takes down",
-    "slam", "slams", "slamming",
-    "sweep", "sweeps", "sweeping",
-    "trip", "trips", "tripping",
-    "throw", "throws", "throwing",
-    "wrestle", "wrestling",
-    "shoots", "shot", "double leg", "single leg",
+    "takedown",
+    "taken down",
+    "takes down",
+    "slam",
+    "slams",
+    "slamming",
+    "sweep",
+    "sweeps",
+    "sweeping",
+    "trip",
+    "trips",
+    "tripping",
+    "throw",
+    "throws",
+    "throwing",
+    "wrestle",
+    "wrestling",
+    "shoots",
+    "shot",
+    "double leg",
+    "single leg",
     "suplex",
 ]
 _KNOCKDOWN_KEYWORDS = [
-    "knockdown", "knocked down", "drops", "dropped",
-    "falls", "fell", "on the canvas", "wobbled",
+    "knockdown",
+    "knocked down",
+    "drops",
+    "dropped",
+    "falls",
+    "fell",
+    "on the canvas",
+    "wobbled",
 ]
 
 
@@ -80,23 +119,17 @@ def compute_control(
         a_prev, b_prev = fighters_prev[0], fighters_prev[1]
 
         # Distance between fighters: current vs previous
-        dist_curr = np.sqrt(
-            (a.bbox.center[0] - b.bbox.center[0]) ** 2
-            + (a.bbox.center[1] - b.bbox.center[1]) ** 2
-        )
+        dist_curr = np.sqrt((a.bbox.center[0] - b.bbox.center[0]) ** 2 + (a.bbox.center[1] - b.bbox.center[1]) ** 2)
         dist_prev = np.sqrt(
-            (a_prev.bbox.center[0] - b_prev.bbox.center[0]) ** 2
-            + (a_prev.bbox.center[1] - b_prev.bbox.center[1]) ** 2
+            (a_prev.bbox.center[0] - b_prev.bbox.center[0]) ** 2 + (a_prev.bbox.center[1] - b_prev.bbox.center[1]) ** 2
         )
 
         # A advancing = A moved toward B (distance decreased + A moved more)
         a_displacement = np.sqrt(
-            (a.bbox.center[0] - a_prev.bbox.center[0]) ** 2
-            + (a.bbox.center[1] - a_prev.bbox.center[1]) ** 2
+            (a.bbox.center[0] - a_prev.bbox.center[0]) ** 2 + (a.bbox.center[1] - a_prev.bbox.center[1]) ** 2
         )
         b_displacement = np.sqrt(
-            (b.bbox.center[0] - b_prev.bbox.center[0]) ** 2
-            + (b.bbox.center[1] - b_prev.bbox.center[1]) ** 2
+            (b.bbox.center[0] - b_prev.bbox.center[0]) ** 2 + (b.bbox.center[1] - b_prev.bbox.center[1]) ** 2
         )
 
         if dist_curr < dist_prev:  # Fighters getting closer
@@ -107,13 +140,17 @@ def compute_control(
 
     # Cage proximity penalty: fighter closer to frame edge has less control
     a_edge_dist = min(
-        a.bbox.center[0], frame_width - a.bbox.center[0],
-        a.bbox.center[1], frame_height - a.bbox.center[1],
+        a.bbox.center[0],
+        frame_width - a.bbox.center[0],
+        a.bbox.center[1],
+        frame_height - a.bbox.center[1],
     ) / max(frame_width, frame_height)
 
     b_edge_dist = min(
-        b.bbox.center[0], frame_width - b.bbox.center[0],
-        b.bbox.center[1], frame_height - b.bbox.center[1],
+        b.bbox.center[0],
+        frame_width - b.bbox.center[0],
+        b.bbox.center[1],
+        frame_height - b.bbox.center[1],
     ) / max(frame_width, frame_height)
 
     edge_diff = a_edge_dist - b_edge_dist  # positive if A is further from edge
